@@ -61,19 +61,6 @@ struct clickos_domain {
     char **migration_domname_r; /* from malloc */
 };
 
-struct device_vale {
-    u_int backend_domid;
-    char mac[6];
-    char *config;
-    char *bridge;
-    char *ifname;
-};
-
-extern char *default_vif_script;
-extern char *default_bridge;
-extern int auto_attach;
-extern int xenvif;
-
 int clickos_create2(struct clickos_domain *dom_info);
 int clickos_create3(const char *config_file, const char *args);
 #endif /* BINDING_SWIG */
@@ -89,9 +76,6 @@ int clickos_create1(const char *name, const char* kernel_path);
 int clickos_destroy(int domid, int force);
 
 int clickos_suspend(int domid, char* filename);
-
-int clickos_network_attach(int domid, char *macaddr, int backend_id, char *bridge);
-int clickos_network_attach1(int domid, struct device_vale *port);
 
 int clickos_start(int domid, const char *name, const char *script);
 int clickos_stop(int domid, int configid);

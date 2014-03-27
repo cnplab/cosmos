@@ -71,7 +71,7 @@ struct cmd_struct {
 };
 
 const char cosmos_usage_string[] =
-    "cosmos [-v] [create|load|destroy|start|stop|suspend|resume|network-attach|write|read] [<args>]";
+    "cosmos [-v] [create|load|destroy|start|stop|suspend|resume|write|read] [<args>]";
 
 const char cosmos_more_info_string[] =
     "See 'cosmos help <command>' for more information on a specific command.";
@@ -81,7 +81,6 @@ int cmd_create(int argc, char **argv);
 #ifdef HAVE_XL
 int cmd_load(int argc, char **argv);
 #endif
-int cmd_network_attach(int argc, char **argv);
 int cmd_start(int argc, char **argv);
 int cmd_stop(int argc, char **argv);
 int cmd_destroy(int argc, char **argv);
@@ -100,7 +99,6 @@ static struct cmd_struct commands[] = {
     { "resume", cmd_resume },
     { "start", cmd_start },
     { "stop", cmd_stop },
-    { "network-attach", cmd_network_attach },
     { "read", cmd_read_h },
     { "write", cmd_write_h },
     { "help", cmd_help },
@@ -380,26 +378,6 @@ int cmd_resume(int argc, char **argv)
     return 0;
 }
 
-int cmd_network_attach(int argc, char **argv)
-{
-    int domid, backend_id;
-    char *hwifname = NULL;
-
-    if (!(domid = strtol(argv[1], NULL, 10)))
-        domid = clickos_domid(argv[1]);
-
-    if (!(backend_id = strtol(argv[3], NULL, 10)))
-        backend_id = clickos_domid(argv[3]);
-
-    if (argc > 3) {
-        hwifname = argv[4];
-    }
-    auto_attach = 0;
-    clickos_network_attach(domid, argv[2], backend_id, hwifname);
-
-    return 0;
-}
-
 #define parse_h_args(id,elem,attr) \
     if (!(id = strtol(argv[1], NULL, 10))) \
         id = clickos_domid(argv[1]); \
@@ -449,18 +427,12 @@ int cmd_start(int argc, char **argv)
         argv++;
     }
 
-    auto_attach = 0;
-
     while (1) {
         opt = getopt_long(argc, argv, "ax", long_options, &option_index);
         if (opt == -1)
             break;
 
         switch (opt) {
-        case 'a':
-            auto_attach = 1;
-            fprintf(stderr, "Auto network-attach enabled\n");
-            break;
         default:
             fprintf(stderr, "option `%c' not supported.\n", optopt);
             break;
@@ -504,17 +476,12 @@ int main(int argc, char **argv)
     int opt = 0, verbose=0;
     int ret;
 
-    xenvif = 0;
     report_timing = 0;
 
     while ((opt = getopt(argc, argv, "+v+xt")) >= 0) {
         switch (opt) {
         case 'v':
             verbose = 1;
-            break;
-        case 'x':
-            xenvif = 1;
-            fprintf(stderr, "Compatibility-mode\n");
             break;
         case 't':
             report_timing = 1;
@@ -538,7 +505,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    clickos_global_init(verbose | (xenvif << 2));
+    clickos_global_init(verbose);
 
     for (i = 0; i < ARRAY_SIZE(commands); i++) {
         struct cmd_struct *p = commands + i;

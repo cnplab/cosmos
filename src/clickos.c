@@ -90,11 +90,6 @@ static const char clickos_config_fmt[] = "kernel = '%s'\n"
 #define MAX_PATH_LENGTH		 	256
 #define MAX_CHUNK_LENGTH		992
 
-char *default_nic_type = "vif";
-char *default_vif_script = "/etc/xen/scripts/vif-bridge";
-char *default_bridge = "xenEXPbr";
-int auto_attach = 0;
-int xenvif = 1;
 int devid = -1;
 
 static void xenstore_init(int domid)
@@ -114,152 +109,6 @@ static void xenstore_init(int domid)
 #define xenstore_read(p)  xs_read(xs, XBT_NULL, p, NULL)
 #define xenstore_write(p,v)  xs_write(xs, th, p, v, strlen(v))
 #define xenstore_chmod(p, f) xs_set_permissions(xs, th, p, f, 1);
-
-static void xenstore_k_write(char *path, char *key, char *value)
-{
-	char *xspath = NULL;
-	asprintf(&xspath, "%s/%s", path, key);
-	xenstore_write(xspath, value);
-}
-
-static int xenstore_write_config(char *path, char *key, char *value)
-{
-	unsigned int c, timeout = (1<<16)-1;
-	char *s = value, *config;
-	do {
-		if (*s == ':')
-			c++;
-	} while (*(s++));
-
-	
-	if (c == 3) {
-		asprintf(&config, "%s:%u:%u", value, timeout, timeout);
-	} else if (c == 5) {
-		config = value;
-	} else {
-		return -EINVAL;
-	}
-	
-	xenstore_k_write(path, key, config);
-	return 0;
-}
-
-static void xenstore_create_frontend_vif(int domid, char *macaddr, int backend_id)
-{
-	void* nr;
-	char *basename_path = NULL;
-	char *fe_path = NULL;
-	char *be_path = NULL;
-	char *fe_state_path = NULL;
-	char *backend_id_str = NULL;
-	char *devid_str = NULL;
-	char *addr = (!macaddr ? "00:00:00:00:00:00" : macaddr);
-	struct xs_permissions frontend_perms[2];
-
-	frontend_perms[0].id = domid;
-	frontend_perms[0].perms = XS_PERM_NONE;
-	frontend_perms[1].id = backend_id;
-	frontend_perms[1].perms = XS_PERM_READ;
-
-	asprintf(&basename_path, "/local/domain/%d/device/%s", domid, XENBUS_ID_NET);
-
-	do {
-		++devid;
-		asprintf(&fe_path, "%s/%d", basename_path, devid);
-		asprintf(&be_path, "/local/domain/%d/backend/%s/%d/%d", backend_id, XENBUS_ID_NET, domid, devid);
-		asprintf(&fe_state_path, "%s/state", fe_path);
-
-		nr = xenstore_read(be_path);
-	}
-	while (nr != 0);
-
-	asprintf(&devid_str, "%d", devid);
-retry_frontend:
-	// Transaction for the vale ring attach
-	th = xs_transaction_start(xs);
-
-	xs_mkdir(xs, th, fe_path);
-	xs_set_permissions(xs, th, fe_path, frontend_perms, 2);
-
-	xenstore_k_write(fe_path, "backend", be_path);
-
-	asprintf(&backend_id_str, "%d", backend_id);
-	xenstore_k_write(fe_path, "backend-id", backend_id_str);
-	xenstore_k_write(fe_path, "state", "1");
-	xenstore_k_write(fe_path, "handle", devid_str);
-	xenstore_k_write(fe_path, "mac", addr);
-
-	if (!xs_transaction_end(xs, th, 0)) {
-		if (errno == EAGAIN)
-			goto retry_frontend;
-	}
-
-}
-
-static void xenstore_create_backend_vif(int domid, char *macaddr, int backend_id,
-				struct device_vale *vif)
-{
-	char *bridge = vif->bridge;
-	char *config = vif->config;
-
-	char *basename_path = NULL;
-	char *be_path = NULL;
-	char *be_state_path = NULL;
-	char *fe_path = NULL;
-	char *fe_id_str = NULL;
-	char *devid_str = NULL;
-	char *addr = (macaddr == NULL ? "00:00:00:00:00:00" : macaddr);
-	struct xs_permissions backend_perms[2];
-
-	backend_perms[0].id = backend_id;
-	backend_perms[0].perms = XS_PERM_NONE;
-	backend_perms[1].id = domid;
-	backend_perms[1].perms = XS_PERM_READ;
-
-	asprintf(&basename_path, "/local/domain/%d/backend/%s/%d", backend_id, XENBUS_ID_NET, domid);
-	asprintf(&be_path, "%s/%d", basename_path, devid);
-	asprintf(&be_state_path, "%s/state", be_path);
-	asprintf(&fe_path, "/local/domain/%d/device/%s/%d", domid, XENBUS_ID_NET, devid);
-	asprintf(&fe_id_str, "%d", domid);
-	asprintf(&devid_str, "%d", devid);
-
-retry_backend:
-	// Transaction for the vale ring attach
-	th = xs_transaction_start(xs);
-
-	xenstore_write(basename_path, "");
-	xs_set_permissions(xs, th, basename_path, backend_perms, 2);
-
-	xenstore_k_write(be_path, "frontend", fe_path);
-	xenstore_k_write(be_path, "frontend-id", fe_id_str);
-	xenstore_k_write(be_path, "online", "1");
-
-	if (config) {
-		xenstore_write_config(be_path, "config", config);
-	}
-
-	if (bridge) {
-		xenstore_k_write(be_path, "bridge", bridge);
-	}
-
-	if (xenvif) {
-		xenstore_k_write(be_path, "bridge", default_bridge);
-		xenstore_k_write(be_path, "script", default_vif_script);
-		xenstore_k_write(be_path, "type", default_nic_type);
-	}
-
-	xenstore_k_write(be_path, "handle", devid_str);
-	xenstore_k_write(be_path, "mac", addr);
-
-	// Backend reacts here
-	xenstore_write(be_state_path, "1");
-
-	if (!xs_transaction_end(xs, th, 0)) {
-		if (errno == EAGAIN)
-			goto retry_backend;
-	}
-
-}
 
 char* clickos_read_handler(int domid, char *elem, char *attr)
 {
@@ -331,52 +180,6 @@ char* clickos_write_handler(int domid, char *elem, char *attr, char *value)
 	return 0;
 }
 
-int   clickos_network_attach(int domid, char *macaddr, int backend_id, char *bridge)
-{
-	struct device_vale port;
-
-	port.backend_domid = backend_id;
-	port.bridge = bridge;
-	port.config = NULL;
-
-	default_domain_perms.id = domid;
-	default_domain_perms.perms = XS_PERM_READ | XS_PERM_WRITE;
-
-	if (!xs) {
-		xenstore_init(domid);
-	}
-
-	xenstore_create_frontend_vif(domid, macaddr, backend_id);
-	xenstore_create_backend_vif(domid, macaddr, backend_id, &port);
-
-	devid = -1;
-
-	return 0;
-}
-
-int   clickos_network_attach1(int domid, struct device_vale *vif)
-{
-	char *macaddr = NULL;
-	unsigned char *port_addr = (unsigned char*) vif->mac;
-
-	asprintf(&macaddr, "%02x:%02x:%02x:%02x:%02x:%02x", port_addr[0], port_addr[1],
-						port_addr[2], port_addr[3], port_addr[4], port_addr[5]);
-
-	default_domain_perms.id = domid;
-	default_domain_perms.perms = XS_PERM_READ | XS_PERM_WRITE;
-
-	if (!xs) {
-		xenstore_init(domid);
-	}
-
-	xenstore_create_frontend_vif(domid, macaddr, vif->backend_domid);
-	xenstore_create_backend_vif(domid, macaddr, vif->backend_domid, vif);
-
-	devid = -1;
-
-	return 0;
-}
-
 static unsigned get_file_size(const char * file_name)
 {
 	struct stat sb;
@@ -437,15 +240,6 @@ int clickos_start(int domid, const char *name, const char *script)
 
 	if (!xs) {
 		xenstore_init(domid);
-	}
-
-	if (auto_attach) {
-		struct device_vale vif;
-		vif.bridge = NULL;
-		xenstore_create_frontend_vif(domid, NULL, 0);
-		xenstore_create_backend_vif(domid, NULL, 0, &vif);
-
-		devid = -1;
 	}
 
 retry_clickos:
@@ -556,9 +350,6 @@ int clickos_global_init(int flags)
 #elif HAVE_XCL
 	xcl_ctx_init();
 #endif
-
-	auto_attach = flags & 0x02;
-	xenvif = flags & 0x04;
 	return ret;
 }
 

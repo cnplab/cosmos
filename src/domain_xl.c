@@ -72,6 +72,7 @@ int run_hotplug_scripts = 1;
 int logfile = 2;
 char *lockfile;
 char *default_vifscript = NULL;
+char *default_bridge = "xenbr0";
 char *blkdev_start;
 
 /* when we operate on a domain, it is this one: */
