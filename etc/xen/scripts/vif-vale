@@ -1,0 +1,32 @@
+#!/bin/bash
+
+dir=$(dirname "$0")
+. "$dir/vif-common.sh"
+
+bridge=${bridge:-}
+bridge=$(xenstore_read_default "$XENBUS_PATH/bridge" "$bridge")
+
+if [ -z "$bridge" ]
+then
+    if [ -z "$bridge" ]
+    then
+       fatal "Could not find bridge for $dev"
+    fi
+fi
+
+case "$command" in
+    online)
+	ip link set $dev up
+	ip link set $vif mtu 1500
+        vale-ctl -a $bridge:$dev
+	xenstore-write "$XENBUS_PATH/feature-netmap" 1
+	xenstore-write "$XENBUS_PATH/hotplug-status" connected
+        ;;
+
+    offline)
+    	bridge=$(vale-ctl 2>&1 | grep $dev | cut -d' ' -f 5)
+	vale-ctl -d $bridge
+        ;;
+esac
+
+log debug "Successful vif-vale $command for $dev, bridge $bridge."

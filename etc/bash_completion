@@ -1,0 +1,25 @@
+#!/bin/bash
+
+commands="create load destroy suspend resume read write start stop network-attach"
+
+_complete_domains() {
+    local cur prev domains
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev=${COMP_WORDS[COMP_CWORD-1]}
+    
+    COMPREPLY=()
+    case "${prev}" in 
+      cosmos)
+        COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
+        ;;
+
+      suspend|destroy|read|write|start|stop|network-attach)
+        domains=$(xl list | awk -F ' ' '{print $1}' | tail -n +3 | xargs)
+        COMPREPLY=( $(compgen -W "$domains" -- "$cur") )
+        ;;
+    esac
+
+    return 0
+}
+
+complete -o default -F _complete_domains cosmos
