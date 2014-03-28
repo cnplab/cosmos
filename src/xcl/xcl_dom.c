@@ -207,7 +207,7 @@ void xcl_dom_create(struct xcl_dominfo *info)
 	struct xc_dom_image *dom;
 	int ret;
 	int flags = 0;
-	uint32_t domid; 
+	uint32_t domid;
 
 	xen_domain_handle_t handle;
 

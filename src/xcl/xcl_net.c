@@ -62,7 +62,8 @@ static inline int  xs_write_config(char *path, char *key, char *value)
 	return 0;
 }
 
-static void xennet_create_fe(int domid, char *macaddr, int backend_id, char *type)
+static void xennet_create_fe(int domid, char *macaddr, int backend_id,
+				char *type)
 {
 	void* nr;
 	char *basename_path = NULL;
@@ -85,7 +86,8 @@ static void xennet_create_fe(int domid, char *macaddr, int backend_id, char *typ
 	do {
 		++devid;
 		asprintf(&fe_path, "%s/%d", basename_path, devid);
-		asprintf(&be_path, "/local/domain/%d/backend/%s/%d/%d", backend_id, type, domid, devid);
+		asprintf(&be_path, "/local/domain/%d/backend/%s/%d/%d",
+				backend_id, type, domid, devid);
 		asprintf(&fe_state_path, "%s/state", fe_path);
 
 		nr = __xsread(be_path);
@@ -132,10 +134,12 @@ static void xennet_create_bk(int domid, char *macaddr, int backend_id,
 	backend_perms[1].id = domid;
 	backend_perms[1].perms = XS_PERM_READ;
 
-	asprintf(&basename_path, "/local/domain/%d/backend/%s/%d", backend_id, vif->type, domid);
+	asprintf(&basename_path, "/local/domain/%d/backend/%s/%d",
+			backend_id, vif->type, domid);
 	asprintf(&be_path, "%s/%d", basename_path, devid);
 	asprintf(&be_state_path, "%s/state", be_path);
-	asprintf(&fe_path, "/local/domain/%d/device/%s/%d", domid, vif->type, devid);
+	asprintf(&fe_path, "/local/domain/%d/device/%s/%d", domid,
+			vif->type, devid);
 	asprintf(&fe_id_str, "%d", domid);
 	asprintf(&devid_str, "%d", devid);
 
