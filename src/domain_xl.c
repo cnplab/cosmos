@@ -1403,7 +1403,7 @@ void domain_ctx_free(void)
 	xtl_logger_destroy((xentoollog_logger*) logger);
 }
 
-int do_create_domain(struct clickos_domain *dom_info)
+int domain_create(struct clickos_domain *dom_info)
 {
 	libxl_domain_config d_config;
 	clickos_extra_config e_config;
@@ -1654,7 +1654,7 @@ waitpid_out:
 
 }
 
-int do_destroy_domain(int _domid, int force)
+int domain_destroy(int _domid, int force)
 {
 	int rc;
 	libxl_event *event;
@@ -1706,7 +1706,7 @@ done:
 	return rc;
 }
 
-int do_suspend_domain(const int domid, const char *filename)
+int domain_suspend(const int domid, const char *filename)
 {
 	int rc;
 	int fd;

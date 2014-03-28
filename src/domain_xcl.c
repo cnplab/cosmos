@@ -256,7 +256,7 @@ void domain_ctx_free(void)
 	xcl_ctx_dispose();
 }
 
-int do_create_domain(struct clickos_domain *dom_info)
+int domain_create(struct clickos_domain *dom_info)
 {
 	struct xcl_dominfo info;
 	struct xcl_domstate state;
@@ -277,12 +277,12 @@ int do_create_domain(struct clickos_domain *dom_info)
 	return 0;
 }
 
-int do_suspend_domain(const int domid, const char *filename)
+int domain_suspend(const int domid, const char *filename)
 {
 	return -ENOTSUP;
 }
 
-int do_destroy_domain(int domid, int force)
+int domain_destroy(int domid, int force)
 {
 	if (domid <= 0) {
 		fprintf(stderr, "domain_xcl: please supply a domain id\n");

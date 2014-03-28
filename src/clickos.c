@@ -55,9 +55,9 @@
 int  domain_ctx_init(int flags);
 void domain_ctx_free(void);
 int domain_name_to_id(char *name);
-int do_create_domain(struct clickos_domain *dom_info);
-int do_destroy_domain(int domid, int force);
-int do_suspend_domain(const int domid, const char *filename);
+int domain_create(struct clickos_domain *dom_info);
+int domain_destroy(int domid, int force);
+int domain_suspend(const int domid, const char *filename);
 
 static struct xs_handle *xs;
 static xs_transaction_t th;
@@ -336,7 +336,7 @@ int clickos_create(const char *config_file)
 	dom_info.extra_config = "\0";
 	dom_info.migrate_fd = -1;
 
-	return do_create_domain(&dom_info);
+	return domain_create(&dom_info);
 }
 
 int clickos_create1(const char *name, const char* kernel_path)
@@ -352,13 +352,13 @@ int clickos_create1(const char *name, const char* kernel_path)
 
 	asprintf(&dom_info.config_data, clickos_config_fmt, kernel_path, name);
 
-	return do_create_domain(&dom_info);
+	return domain_create(&dom_info);
 }
 
 #ifndef BINDING_SWIG
 int clickos_create2(struct clickos_domain *dom_info)
 {
-	return do_create_domain(dom_info);
+	return domain_create(dom_info);
 }
 #endif
 
@@ -375,16 +375,16 @@ int clickos_create3(const char *config_file, const char *args)
 
 	asprintf(&dom_info.config_data, "%s\nextra = '%s'\n", config_file, args);
 
-	return do_create_domain(&dom_info);
+	return domain_create(&dom_info);
 }
 
 int clickos_destroy(int domid, int force)
 {
-	return do_destroy_domain(domid, force);
+	return domain_destroy(domid, force);
 }
 
 int clickos_suspend(int domid, char* filename)
 {
-    return do_suspend_domain(domid, filename);
+    return domain_suspend(domid, filename);
 }
 

@@ -55,19 +55,19 @@ void domain_ctx_free()
 {
 }
 
-int do_create_domain(struct clickos_domain *dom_info)
+int domain_create(struct clickos_domain *dom_info)
 {
 	fprintf(stderr, "Compile with DOMLIB=xl or DOMLIB=xcl to enable this\n");
 	return -ENOTSUP;
 }
 
-int do_suspend_domain(const int domid, const char *filename)
+int domain_suspend(const int domid, const char *filename)
 {
 	fprintf(stderr, "Compile with DOMLIB=xl or DOMLIB=xcl to enable this\n");
 	return -ENOTSUP;
 }
 
-int do_destroy_domain(int domid, int force)
+int domain_destroy(int domid, int force)
 {
 	fprintf(stderr, "Compile with DOMLIB=xl or DOMLIB=xcl to enable this\n");
 	return -ENOTSUP;
