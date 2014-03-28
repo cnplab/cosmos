@@ -62,16 +62,14 @@ static inline int  xs_write_config(char *path, char *key, char *value)
 	return 0;
 }
 
-static void xennet_create_fe(int domid, char *macaddr, int backend_id,
+static void xennet_create_fe(int domid, int handle, char *macaddr, int backend_id,
 				char *type)
 {
-	void* nr;
 	char *basename_path = NULL;
 	char *fe_path = NULL;
 	char *be_path = NULL;
-	char *fe_state_path = NULL;
 	char *backend_id_str = NULL;
-	int devid = -1;
+	int devid = handle;
 	char *devid_str = NULL;
 	char *addr = (!macaddr ? "00:00:00:00:00:00" : macaddr);
 	struct xs_permissions frontend_perms[2];
@@ -82,18 +80,9 @@ static void xennet_create_fe(int domid, char *macaddr, int backend_id,
 	frontend_perms[1].perms = XS_PERM_READ;
 
 	asprintf(&basename_path, "/local/domain/%d/device/%s", domid, type);
-
-	do {
-		++devid;
-		asprintf(&fe_path, "%s/%d", basename_path, devid);
-		asprintf(&be_path, "/local/domain/%d/backend/%s/%d/%d",
-				backend_id, type, domid, devid);
-		asprintf(&fe_state_path, "%s/state", fe_path);
-
-		nr = __xsread(be_path);
-	}
-	while (nr != 0);
-
+	asprintf(&fe_path, "%s/%d", basename_path, devid);
+	asprintf(&be_path, "/local/domain/%d/backend/%s/%d/%d",
+			backend_id, type, domid, devid);
 	asprintf(&devid_str, "%d", devid);
 retry_frontend:
 	// Transaction for the vale ring attach
@@ -116,7 +105,7 @@ retry_frontend:
 	}
 }
 
-static void xennet_create_bk(int domid, char *macaddr, int backend_id,
+static void xennet_create_bk(int domid, int handle, char *macaddr, int backend_id,
 				struct xcl_device_nic *vif)
 {
 	char *bridge = vif->bridge;
@@ -125,7 +114,7 @@ static void xennet_create_bk(int domid, char *macaddr, int backend_id,
 	     *be_path = NULL, *be_state_path = NULL,
 	     *fe_path = NULL, *fe_id_str = NULL,
 	     *devid_str = NULL;
-	int devid = 0;
+	int devid = handle;
 	char *addr = (macaddr == NULL ? "00:00:00:00:00:00" : macaddr);
 	struct xs_permissions backend_perms[2];
 
@@ -218,7 +207,7 @@ static void xennet_watchdog(char *path, const char *expected)
 	}
 }
 
-static void xennet_hotplug(int domid, char *script, char *type, int online)
+static void xennet_hotplug(int domid, int handle, char *script, char *type, int online)
 {
 	char *dev_path, *state_path, *vif_name;
 	const char *state_connected = online ? "connected" : "6";
@@ -227,9 +216,9 @@ static void xennet_hotplug(int domid, char *script, char *type, int online)
 	pid_t pid;
 	int nr = 0, argnr = 0;
 
-	asprintf(&dev_path, "backend/%s/%u/%d", type, domid, 0);
+	asprintf(&dev_path, "backend/%s/%u/%d", type, domid, handle);
 	asprintf(&state_path, online ? "%s/hotplug-status" : "%s/state", dev_path);
-	asprintf(&vif_name, "vif%u.%u", domid, 0);
+	asprintf(&vif_name, "vif%u.%u", domid, handle);
 
 	args[argnr++] = script;
 	args[argnr++] = online ? "online" : "offline";
@@ -271,11 +260,11 @@ void xcl_net_attach(int domid, int nr_nics, struct xcl_device_nic *nics)
 	for (i = 0; i < nr_nics; ++i) {
 		struct xcl_device_nic *nic = &nics[i];
 
-		xennet_create_fe(domid, nic->mac, nic->backend_domid,
+		xennet_create_fe(domid, i, nic->mac, nic->backend_domid,
 			nic->type);
-		xennet_create_bk(domid, nic->mac, nic->backend_domid,
+		xennet_create_bk(domid, i, nic->mac, nic->backend_domid,
 			nic);
-		xennet_hotplug(domid, nic->script, nic->type, 1);
+		xennet_hotplug(domid, i, nic->script, nic->type, 1);
 	}
 }
 
