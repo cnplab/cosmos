@@ -79,7 +79,6 @@ struct xcl_domstate {
 	struct xcl_device_nic {
 		u_int backend_domid;
 		char *mac;
-		char *config;
 		char *bridge;
 		char *ifname;
 		char *script;

@@ -39,29 +39,6 @@
 #include "xcl.h"
 #include "xcl_util.h"
 
-static inline int  xs_write_config(char *path, char *key, char *value)
-{
-	unsigned int c, timeout = (1<<16)-1;
-	char *s = value, *config;
-	do {
-		if (*s == ':')
-			c++;
-	} while (*(s++));
-
-
-	if (c == 3) {
-		asprintf(&config, "%s:%u:%u", value, timeout, timeout);
-	} else if (c == 5) {
-		config = value;
-	} else {
-		fprintf(stderr, "invalid config\n");
-		return -EINVAL;
-	}
-
-	__xswritek(path, key, config);
-	return 0;
-}
-
 static void xennet_create_fe(int domid, int handle, char *macaddr, int backend_id,
 				char *type)
 {
@@ -109,7 +86,6 @@ static void xennet_create_bk(int domid, int handle, char *macaddr, int backend_i
 				struct xcl_device_nic *vif)
 {
 	char *bridge = vif->bridge;
-	char *config = vif->config;
 	char *basename_path = NULL,
 	     *be_path = NULL, *be_state_path = NULL,
 	     *fe_path = NULL, *fe_id_str = NULL,
@@ -141,10 +117,6 @@ retry_backend:
 	__xswritek(be_path, "frontend", fe_path);
 	__xswritek(be_path, "frontend-id", fe_id_str);
 	__xswritek(be_path, "online", "1");
-
-	if (config) {
-		xs_write_config(be_path, "config", config);
-	}
 
 	if (bridge) {
 		__xswritek(be_path, "bridge", bridge);
