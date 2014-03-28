@@ -67,7 +67,7 @@ extern xentoollog_logger_stdiostream *logger;
 extern libxl_ctx *ctx;
 extern xentoollog_level minmsglevel;
 
-int autoballoon = 1;
+int autoballoon = 0;
 int run_hotplug_scripts = 1;
 int logfile = 2;
 char *lockfile;
