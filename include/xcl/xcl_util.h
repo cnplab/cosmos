@@ -68,6 +68,13 @@ static inline char* uuid_to_str(uint8_t uuid[])
 #define __xswrite(p,v)  xs_write(ctx->xsh, t, p, v, strlen(v))
 #define __xschmod(p, f) xs_set_permissions(ctx->xsh, t, p, f, 1);
 
+static inline char* __xsreadk(char *path, char *key)
+{
+	char *xspath = NULL;
+	asprintf(&xspath, "%s/%s", path, key);
+	return __xsread(xspath);
+}
+
 static inline void __xswritek(char *path, char *key, char *value)
 {
 	char *xspath = NULL;

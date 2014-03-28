@@ -194,7 +194,7 @@ static void xennet_watchdog(char *path, const char *expected)
 		char *buf = __xsread(path);
 		if (buf == NULL) {
 			if (errno == ENOENT)
-				LOGE("watchdog error: %s", strerror(errno));
+				break;
 		}
 
 		if (!strcmp(buf, expected)) {
@@ -210,14 +210,14 @@ static void xennet_watchdog(char *path, const char *expected)
 static void xennet_hotplug(int domid, int handle, char *script, char *type, int online)
 {
 	char *dev_path, *state_path, *vif_name;
-	const char *state_connected = online ? "connected" : "6";
+	const char *expected = online ? "connected" : "disconnected";
 	char **args = malloc(4*sizeof(char *));
 	char **env = malloc(15*sizeof(char *));
 	pid_t pid;
 	int nr = 0, argnr = 0;
 
 	asprintf(&dev_path, "backend/%s/%u/%d", type, domid, handle);
-	asprintf(&state_path, online ? "%s/hotplug-status" : "%s/state", dev_path);
+	asprintf(&state_path, "%s/hotplug-status", dev_path);
 	asprintf(&vif_name, "vif%u.%u", domid, handle);
 
 	args[argnr++] = script;
@@ -250,7 +250,8 @@ static void xennet_hotplug(int domid, int handle, char *script, char *type, int 
 		do_hotplug(args[0], args, env);
 	}
 
-	xennet_watchdog(state_path, state_connected);
+	if (online)
+		xennet_watchdog(state_path, expected);
 }
 
 void xcl_net_attach(int domid, int nr_nics, struct xcl_device_nic *nics)
@@ -268,22 +269,61 @@ void xcl_net_attach(int domid, int nr_nics, struct xcl_device_nic *nics)
 	}
 }
 
-void xcl_net_detach(int domid)
+int  xcl_net_nrdevs(int domid)
 {
-	char *dom_path, *dom_vm_path, *vm_path;
+	int backend_domid = 0, nr_devs = 0, i;
+	char *vif_path, *buf;
 
-	dom_path = xs_get_domain_path(ctx->xsh, domid);
-	asprintf(&dom_vm_path, "%s/vm", dom_path);
-	vm_path = __xsread(dom_vm_path);
-
-retry_detach:
-	t = xs_transaction_start(ctx->xsh);
-	xs_rm(ctx->xsh, t, dom_path);
-	xs_rm(ctx->xsh, t, vm_path);
-
-	if (!xs_transaction_end(ctx->xsh, t, 0)) {
-		if (errno == EAGAIN) {
-			goto retry_detach;
-		}
+	for (i=0; i<64; i++) {
+		asprintf(&vif_path, "/local/domain/%d/backend/vif/%d/%d",
+				backend_domid, domid, i);
+		buf = __xsreadk(vif_path, "state");
+		if (!buf)
+			break;
+		++nr_devs;
 	}
+
+	return nr_devs;
+}
+
+void xcl_net_detach(int domid, int devid)
+{
+	char *buf;
+	char *vif_path, *vif_err_path, *vif_fe_path;
+	int backend_domid = 0, rc;
+
+	asprintf(&vif_path, "/local/domain/%d/backend/vif/%d/%d",
+			backend_domid, domid, devid);
+	buf = __xsreadk(vif_path, "state");
+	if (!buf)
+		return;
+	
+	buf = __xsreadk(vif_path, "bridge");
+	
+	if (!strncmp("vale", buf, 4)) {
+		xennet_hotplug(domid, devid,
+			__xsreadk(vif_path, "script"),
+			__xsreadk(vif_path, "type"),
+			0);
+	}
+
+	asprintf(&vif_path, "/local/domain/%d/backend/vif/%d/%d",
+			backend_domid, domid, devid);
+	asprintf(&vif_err_path, "/local/domain/%d/error/backend/vif/%d",
+			backend_domid, domid);
+	asprintf(&vif_fe_path, "/local/domain/%d/device/vif/%d",
+			domid, devid);
+
+	do {
+		t = xs_transaction_start(ctx->xsh);
+		xs_rm(ctx->xsh, t, vif_fe_path);
+		rc = xs_transaction_end(ctx->xsh, t, 0);
+	} while (!rc && errno == EAGAIN);
+
+	do {
+		t = xs_transaction_start(ctx->xsh);
+		xs_rm(ctx->xsh, t, vif_path);
+		xs_rm(ctx->xsh, t, vif_err_path);
+		rc = xs_transaction_end(ctx->xsh, t, 0);
+	} while (!rc && errno == EAGAIN);
 }

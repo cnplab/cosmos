@@ -326,11 +326,28 @@ retry_shutdown:
 
 void xcl_dom_destroy(int domid)
 {
+	int rc, nr_devs;
+	char *dom_path, *dom_vm_path, *vm_path;
+
 	if (xc_domain_pause(ctx->xch, domid) < 0)
 		LOG("error unpausing domain %d", domid);
+
+	nr_devs = xcl_net_nrdevs(domid);
+	for(int i = 0; i < nr_devs; ++i) {
+		xcl_net_detach(domid, i);
+	}
 
 	if (xc_domain_destroy(ctx->xch, domid) < 0)
 		LOG("error destroying domain %d", domid);
 
-	xcl_net_detach(domid);
+	dom_path = xs_get_domain_path(ctx->xsh, domid);
+	asprintf(&dom_vm_path, "%s/vm", dom_path);
+	vm_path = __xsread(dom_vm_path);
+
+	do {
+		t = xs_transaction_start(ctx->xsh);
+		xs_rm(ctx->xsh, t, dom_path);
+		xs_rm(ctx->xsh, t, vm_path);
+		rc = xs_transaction_end(ctx->xsh, t, 0);
+	} while (!rc && errno == EAGAIN);
 }

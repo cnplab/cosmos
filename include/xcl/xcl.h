@@ -125,7 +125,8 @@ void xcl_dom_create(struct xcl_dominfo *info);
 void xcl_dom_shutdown(int domid);
 void xcl_dom_destroy(int domid);
 
+int  xcl_net_nrdevs(int domid);
 void xcl_net_attach(int domid, int nr_nics, struct xcl_device_nic *nics);
-void xcl_net_detach(int domid);
+void xcl_net_detach(int domid, int devid);
 
 #endif
