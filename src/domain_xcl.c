@@ -98,6 +98,12 @@ static int parse_config_item(struct xcl_dominfo **_info, const char *name,
 			}
 
 		} while ((p = strtok(NULL, ",")) != NULL);
+
+		if (!nic->script)
+			nic->script = "/etc/xen/scripts/vif-bridge";
+
+		if (!nic->type)
+			nic->type = "vif";
 	}
 	return 0;
 }
@@ -201,7 +207,7 @@ static void parse_config_value(struct xcl_dominfo **dinfo, const char **click_fi
 
 #define MAX_LINE_LEN	 256
 static void parse_config(const char *config, struct xcl_dominfo *info, 
-		const char **click_file, int data)
+		const char **click_file)
 {
 	FILE *file;
 	char *line = (char*) malloc(MAX_LINE_LEN);
@@ -225,7 +231,6 @@ static void parse_config(const char *config, struct xcl_dominfo *info,
 			*cont = '\0';
 			name = rstrip(buf);
 			value = lstrip(cont + 1);	
-			fprintf(stderr, "name = %s; value = %s\n", name, value);
 			if (value[0] == '[')
 				parse_config_list(&info, name, value);
 			else
@@ -240,25 +245,16 @@ int do_create_domain(struct clickos_domain *dom_info)
 {
 	struct xcl_dominfo info;
 	struct xcl_domstate state;
-	struct xcl_device_nic *nic;
 	
 	memset(&info, 0, sizeof(struct xcl_dominfo));
 	memset(&state, 0, sizeof(struct xcl_domstate));
 	
 	info.state = &state;
-	parse_config(dom_info->config_file, &info, &dom_info->click_file, 0);
-	nic = &state.nics[0];
-	
-	if (!nic->script)
-		nic->script = "/etc/xen/scripts/vif-bridge";
-	
-	if (!nic->type)
-		nic->type = "vif";
+	parse_config(dom_info->config_file, &info, &dom_info->click_file);
 
 	xcl_dom_create(&info);
 
 	if (dom_info->click_file) {
-		fprintf(stderr, "click_script = %s\n", dom_info->click_file);
 		clickos_start(info.domid, dom_info->click_file, 
 			clickos_read_script(dom_info->click_file));
 	}
