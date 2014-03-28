@@ -132,7 +132,6 @@ static void parse_config_list(struct xcl_dominfo **_info, const char *name,
 	
 	for (i=0 ; val[i] != 0 ;++i) {
 		if (is_sep(val, i)) {
-			nr_items++;
 			continue;
 		}
 		
@@ -147,12 +146,12 @@ static void parse_config_list(struct xcl_dominfo **_info, const char *name,
 	
 		if (is_item && !item_parsed) {
 			item_parsed = 1;
-			token = strdup(++val);
+			token = strdup(&val[i]);
 			token_end = strchr(token, '\'');
 			*token_end = '\0';
 			buf = malloc(strlen(token));
-			strncpy(buf, token, strlen(token));
-			i += strlen(token) - 2;
+			strncpy(buf, token, token_end - token);
+			i += strlen(buf) - 2;
 			parse_config_item(_info, name, buf, nr_items);
 		}
 	}
