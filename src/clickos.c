@@ -52,26 +52,12 @@
 
 #include "clickos.h"
 
-#if HAVE_XL
-# include <libxl.h>
-# include <libxl_utils.h>
-#endif
-
+int  domain_ctx_init(int flags);
+void domain_ctx_free(void);
+int domain_name_to_id(char *name);
 int do_create_domain(struct clickos_domain *dom_info);
 int do_destroy_domain(int domid, int force);
 int do_suspend_domain(const int domid, const char *filename);
-
-#if HAVE_XCL
-# include <xcl/xcl.h>
-#endif
-
-#if HAVE_XL
-# include <libxlutil.h>
-xentoollog_logger_stdiostream *logger;
-xentoollog_level minmsglevel = XTL_PROGRESS;
-libxl_ctx *ctx;
-char *lockfile;
-#endif
 
 static struct xs_handle *xs;
 static xs_transaction_t th;
@@ -325,57 +311,19 @@ retry_stop:
 
 int clickos_global_init(int flags)
 {
-	int ret = 0;
-#ifdef HAVE_XL
-	int verbose = flags & 0x01;
-	if (verbose) {
-		minmsglevel--;
-		printf("Setting loglevel to %d\n", minmsglevel);
-	}
+	return domain_ctx_init(flags);
+}
 
-	logger = xtl_createlogger_stdiostream(stderr, minmsglevel,  0);
-	if (!logger)
-		exit(1);
-
-	if (libxl_ctx_alloc(&ctx, LIBXL_VERSION, 0, (xentoollog_logger*)logger)) {
-		fprintf(stderr, "cannot init xl context\n");
-		exit(1);
-	}
-
-	ret = asprintf(&lockfile, "/var/lock/xl");
-	if (ret < 0) {
-		fprintf(stderr, "asprintf memory allocation failed\n");
-		exit(1);
-	}
-#elif HAVE_XCL
-	xcl_ctx_init();
-#endif
-	return ret;
+void clickos_global_free(void)
+{
+	domain_ctx_free();
 }
 
 int clickos_domid(char *domname)
 {
 	uint32_t domid;
-#ifdef HAVE_XL
-	if(libxl_name_to_domid(ctx, domname, &domid)) {
-		return -EINVAL;
-	}
-#elif HAVE_XCL
-	domid = xcl_dom_id(domname);
-#else
-	domid = atoi(domname);
-#endif
+	domid = domain_name_to_id(domname);
 	return domid <= 0 ? -ENOENT : domid;
-}
-
-void clickos_global_free(void)
-{
-#ifdef HAVE_XL
-	libxl_ctx_free(ctx);
-	xtl_logger_destroy((xentoollog_logger*) logger);
-#elif HAVE_XCL
-	xcl_ctx_dispose();
-#endif
 }
 
 int clickos_create(const char *config_file)

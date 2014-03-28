@@ -240,6 +240,22 @@ static void parse_config(const char *config, struct xcl_dominfo *info,
 	fclose(file);
 }
 
+int domain_name_to_id(char *name)
+{
+	return xcl_dom_id(name);
+}
+
+int domain_ctx_init(int flags)
+{
+	xcl_ctx_init();
+	return 0;
+}
+
+void domain_ctx_free(void)
+{
+	xcl_ctx_dispose();
+}
+
 int do_create_domain(struct clickos_domain *dom_info)
 {
 	struct xcl_dominfo info;

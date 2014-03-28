@@ -42,6 +42,19 @@
 
 #include "clickos.h"
 
+int domain_name_to_id(char *name)
+{
+	return atoi(name);
+}
+
+int domain_ctx_init(int flags)
+{
+}
+
+void domain_ctx_free()
+{
+}
+
 int do_create_domain(struct clickos_domain *dom_info)
 {
 	fprintf(stderr, "Compile with DOMLIB=xl or DOMLIB=xcl to enable this\n");
