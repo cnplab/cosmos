@@ -243,7 +243,7 @@ retry_clickos:
 
 	asprintf(&clickos_elem_path, "%s/elements", clickos_root_path);
 	asprintf(&clickos_ctl_path, "%s/control", clickos_root_path);
-	asprintf(&clickos_config_name_path, "%s/clickos_config_name", clickos_root_path);
+	asprintf(&clickos_config_name_path, "%s/config_name", clickos_root_path);
 	asprintf(&clickos_status_path, "%s/status", clickos_root_path);
 
 	xenstore_write(clickos_elem_path, "");
