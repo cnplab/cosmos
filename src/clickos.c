@@ -219,10 +219,10 @@ int clickos_start(int domid, const char *name, const char *script)
 	char *clickos_config_name_path = NULL;
 	char *clickos_config_path = NULL;
 	char *clickos_status_path = NULL;
-
+	char *clickos_router_path = NULL;
+	int clickos_config_id = 0;
 	default_domain_perms.id = domid;
 	default_domain_perms.perms = XS_PERM_READ | XS_PERM_WRITE;
-	int domain_click_config_id = 0;
 
 	if (!xs) {
 		xenstore_init(domid);
@@ -233,7 +233,14 @@ retry_clickos:
 	th = xs_transaction_start(xs);
 
 	asprintf(&domain_root_path, "/local/domain/%d", domid);
-	asprintf(&clickos_root_path, "%s/clickos/%d", domain_root_path, domain_click_config_id);
+
+	do {
+		asprintf(&clickos_root_path, "%s/clickos/%d", domain_root_path, clickos_config_id);
+		clickos_router_path = xenstore_read(clickos_root_path);
+		if (clickos_router_path)
+			clickos_config_id++;
+	} while (clickos_router_path != NULL);
+
 	asprintf(&clickos_elem_path, "%s/elements", clickos_root_path);
 	asprintf(&clickos_ctl_path, "%s/control", clickos_root_path);
 	asprintf(&clickos_config_name_path, "%s/clickos_config_name", clickos_root_path);
@@ -263,11 +270,9 @@ retry_clickos:
 		}
 		memcpy(clickos_script_chunk, script + (chunk * MAX_CHUNK_LENGTH), chunkSize);
 		clickos_script_chunk[chunkSize] = '\0';
-		//fprintf(stderr, "Writing %d bytes to path %s:\n\t%s\n", chunkSize, clickos_config_path, clickos_script_chunk);
 		xenstore_write(clickos_config_path, clickos_script_chunk);
 		chunk++;
 		remainingScriptSize -= chunkSize;
-		//fprintf(stderr, "Chunk: %d, Remaining: %d\n", chunk, remainingScriptSize);
 	} while (remainingScriptSize > 0);
 
 	if (!xs_transaction_end(xs, th, 0)) {
