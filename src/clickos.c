@@ -210,7 +210,7 @@ char* clickos_read_script(const char *script_path)
 
 int clickos_start(int domid, const char *name, const char *script)
 {
-	const char *clickos_config_path_tail = "/click_os_config/";
+	const char *clickos_config_path_tail = "/config/";
 	char clickos_script_chunk[1501];
 
 	char *clickos_root_path = NULL;
