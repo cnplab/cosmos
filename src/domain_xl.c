@@ -1618,6 +1618,9 @@ int domain_create(struct clickos_domain *dom_info)
 
 	release_lock();
 
+	if (!dom_info->paused)
+		libxl_domain_unpause(ctx, domid);
+
 	if (e_config.click_file != NULL) {
 		click_script = clickos_read_script(e_config.click_file);
 	}
@@ -1625,9 +1628,6 @@ int domain_create(struct clickos_domain *dom_info)
 	if (click_script) {
 		clickos_start(domid, d_config.c_info.name, click_script);
 	}
-
-	if (!dom_info->paused)
-		libxl_domain_unpause(ctx, domid);
 
 	ret = domid; /* caller gets success in parent */
 
