@@ -49,9 +49,10 @@ int domain_name_to_id(char *name)
 
 int domain_ctx_init(int flags)
 {
+	return -ENOTSUP;
 }
 
-void domain_ctx_free()
+void domain_ctx_free(void)
 {
 }
 
