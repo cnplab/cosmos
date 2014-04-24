@@ -26,11 +26,19 @@ $(error "Define XEN_ROOT to build with DOMLIB=$(DOMLIB)")
 endif
 endif
 
-XEN_VERSION	?= $(shell xl info | grep xen_version | awk -F': ' '{ \
+_VERSION	?= $(shell xl info | grep xen_version)
+ifeq "$(_VERSION)" ""
+XEN_VERSION          ?= $(shell xl info | grep -E "(xen_major|xen_minor|xen_extra)" | cut -d: -f2 | tr -d ' ' | tr -d '.' | tr '\n' '.' | awk  '{ \
+        split($$1, b, "."); \
+        printf "%01x%02x%02x", b[1], b[2], b[3]; \
+        }')
+else
+XEN_VERSION     ?= $(shell echo $(_VERSION) | awk -F': ' { \
 	split($$2, a, "-"); \
 	split(a[1], b, "."); \
 	printf "%01x%02x%02x", b[1], b[2], b[3]; \
 	}')
+endif
 
 PYTHON_VERSION	?= 2.7
 
