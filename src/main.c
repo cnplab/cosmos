@@ -71,7 +71,11 @@ struct cmd_struct {
 };
 
 const char cosmos_usage_string[] =
+#ifdef HAVE_XL
     "cosmos [-v] [create|load|destroy|start|stop|suspend|resume|write|read] [<args>]";
+#else
+    "cosmos [-v] [create|destroy|start|stop|suspend|resume|write|read] [<args>]";
+#endif
 
 const char cosmos_more_info_string[] =
     "See 'cosmos help <command>' for more information on a specific command.";
