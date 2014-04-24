@@ -1567,8 +1567,15 @@ int domain_create(struct clickos_domain *dom_info)
 	autoconnect_console_how = 0;
 
 	if ( restore_file ) {
+#if XEN_VERSION >= 40400
+		libxl_domain_restore_params params;
+		params.checkpointed_stream = 0;
+#endif
 		ret = libxl_domain_create_restore(ctx, &d_config,
 											&domid, restore_fd,
+#if XEN_VERSION >= 40400
+											&params,
+#endif
 											0, autoconnect_console_how);
 	}else{
 		ret = libxl_domain_create_new(ctx, &d_config, &domid,

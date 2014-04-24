@@ -26,6 +26,12 @@ $(error "Define XEN_ROOT to build with DOMLIB=$(DOMLIB)")
 endif
 endif
 
+XEN_VERSION	?= $(shell xl info | grep xen_version | awk -F': ' '{ \
+	split($$2, a, "-"); \
+	split(a[1], b, "."); \
+	printf "%01x%02x%02x", b[1], b[2], b[3]; \
+	}')
+
 PYTHON_VERSION	?= 2.7
 
 V8_SWIG			?= swig
@@ -105,6 +111,8 @@ BUILD_DIRS		+= $(LIB_DIR)
 ################################################################################
 # Configure building
 ################################################################################
+CDEFINES	+= -DXEN_VERSION=$(XEN_VERSION)
+
 CINCLUDES	+= -I$(INCLUDE_DIR)
 
 CFLAGS		+= -std=gnu99
