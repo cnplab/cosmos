@@ -142,7 +142,6 @@ LIBXCL_OBJS0			 =	\
 	xcl_dom.o				\
 	xcl_net.o
 LIBXCL_OBJS				 = $(addprefix $(LIBXCL_BUILD_DIR)/,$(LIBXCL_OBJS0))
-LIBXCL_LDFLAGS			+= -lxenlight
 
 BUILD_DIRS				+= $(LIBXCL_BUILD_DIR)
 
