@@ -350,4 +350,6 @@ void xcl_dom_destroy(int domid)
 		xs_rm(ctx->xsh, t, vm_path);
 		rc = xs_transaction_end(ctx->xsh, t, 0);
 	} while (!rc && errno == EAGAIN);
+
+	xs_release_domain(ctx->xsh, domid);
 }
