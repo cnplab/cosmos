@@ -93,6 +93,7 @@ struct xcl_dominfo {
 	uint8_t uuid[16];
 	char *uuid_string;
 	uint32_t ssidref;
+	bool pvh;
 	int max_vcpus;
 	uint32_t pcpu;
 	uint64_t max_memkb;

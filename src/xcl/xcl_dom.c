@@ -199,6 +199,7 @@ retry_console:
 	}
 }
 
+#define TSC_MODE_NATIVE		 2
 #define TSC_MODE_NATIVE_PARAVIRT 3
 
 void xcl_dom_create(struct xcl_dominfo *info)
@@ -206,16 +207,24 @@ void xcl_dom_create(struct xcl_dominfo *info)
 	struct xcl_domstate *state = info->state;
 	struct xc_dom_image *dom;
 	int ret;
-	int flags = 0;
-	uint32_t domid;
+	int flags = 0, tsc_mode = TSC_MODE_NATIVE_PARAVIRT;
+	uint32_t domid = -1;
 
 	xen_domain_handle_t handle;
 
 	uuid_generate(info->uuid);
 	info->uuid_string = uuid_to_str(info->uuid);
 
+	if (info->pvh) {
+		flags |= XEN_DOMCTL_CDF_pvh_guest;
+		flags |= XEN_DOMCTL_CDF_hap;
+		tsc_mode = TSC_MODE_NATIVE;
+		info->slack_memkb = 0;
+	}
+
 	ret = xc_domain_create(ctx->xch, 0, handle, flags, &domid);
 	info->domid = domid;
+
 	ret = xc_cpupool_movedomain(ctx->xch, 0, domid);
 	xc_domain_max_vcpus(ctx->xch, domid, info->max_vcpus);
 	__xcl_dom_pin(info);
@@ -226,14 +235,20 @@ void xcl_dom_create(struct xcl_dominfo *info)
 	xc_domain_setmaxmem(ctx->xch, domid, info->target_memkb + XCL_MAXMEM);
 	state->store_port = xc_evtchn_alloc_unbound(ctx->xch, domid, state->store_domid);
 	state->console_port = xc_evtchn_alloc_unbound(ctx->xch, domid, state->console_domid);
-
 	xc_domain_set_memmap_limit(ctx->xch, domid, (info->max_memkb + info->slack_memkb));
-	xc_domain_set_tsc_info(ctx->xch, domid, TSC_MODE_NATIVE_PARAVIRT, 0, 0, 0);
+	xc_domain_set_tsc_info(ctx->xch, domid, tsc_mode, 0, 0, 0);
+	if (info->pvh) {
+		info->features = "writable_descriptor_tables|"
+				   "auto_translated_physmap|"
+				   "supervisor_mode_kernel|"
+				   "hvm_callback_vector";
+	}
 
 	/* build */
 	xc_dom_loginit(ctx->xch);
 
 	dom = (struct xc_dom_image*) xc_dom_allocate(ctx->xch, state->cmdline, info->features);
+	dom->pvh_enabled = info->pvh;
 	dom->flags = flags;
 	dom->console_evtchn = state->console_port;
 	dom->console_domid = state->console_domid;
@@ -253,8 +268,13 @@ void xcl_dom_create(struct xcl_dominfo *info)
 	ret = xc_dom_boot_image(dom);
 	ret = xc_dom_gnttab_init(dom);
 
-	state->console_mfn = xc_dom_p2m_host(dom, dom->console_pfn);
+	if (info->pvh) {
+		state->console_mfn = dom->console_pfn;
+		state->store_mfn = dom->xenstore_pfn;
+	} else {
+		state->console_mfn = xc_dom_p2m_host(dom, dom->console_pfn);
 		state->store_mfn = xc_dom_p2m_host(dom, dom->xenstore_pfn);
+	}
 
 	xc_dom_release(dom);
 
