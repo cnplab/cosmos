@@ -45,7 +45,7 @@
 static xentoollog_level minmsglevel = XTL_PROGRESS;
 static xentoollog_logger_stdiostream *lg;
 struct xcl_ctx *ctx;
-xs_transaction_t t = NULL;
+xs_transaction_t t;
 
 static void __xcl_dom_pin(struct xcl_dominfo *info)
 {
