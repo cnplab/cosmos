@@ -75,6 +75,7 @@ static const char clickos_config_fmt[] = "kernel = '%s'\n"
 #define MAX_ENTRY_LENGTH		4096
 #define MAX_PATH_LENGTH		 	256
 #define MAX_CHUNK_LENGTH		992
+#define MAX_ID_LENGTH 			32
 
 int devid = -1;
 
@@ -184,12 +185,6 @@ char* clickos_read_script(const char *script_path)
 	FILE *f;
 
 	len = get_file_size(script_path);
-	if (len > 10 * 1500) {
-		fprintf(stderr, "Click configurations with more than 15000 bytes not supported.\n");
-		errno = EINVAL;
-		return NULL;
-	}
-
 	script = malloc(len + 1);
 	f = fopen(script_path, "r");
 
@@ -256,13 +251,13 @@ retry_clickos:
 
 	// we need one character for each chunk
 	int config_path_len = strlen(clickos_root_path)
-						  + strlen(clickos_config_path_tail) + 1;
-	clickos_config_path = malloc(config_path_len + 1);
+						  + strlen(clickos_config_path_tail) + MAX_ID_LENGTH + 1;
+	clickos_config_path = malloc(config_path_len);
 	int chunk = 0;
 	int scriptSize = strlen(script);
 	int remainingScriptSize = scriptSize;
 	do {
-		snprintf(clickos_config_path, config_path_len + 1, "%s%s%d",
+		snprintf(clickos_config_path, config_path_len, "%s%s%d",
 				 clickos_root_path, clickos_config_path_tail, chunk);
 		int chunkSize = MAX_CHUNK_LENGTH;
 		if (remainingScriptSize < MAX_CHUNK_LENGTH) {
