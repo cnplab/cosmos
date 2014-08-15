@@ -172,6 +172,9 @@ static void parse_config_value(struct xcl_dominfo **dinfo, const char **click_fi
 		len--;
 	}	
 
+	if (!strcmp(name, "pvh"))
+		info->pvh = atoi(val) != 0 ? true : false;
+
 	if (!strcmp(name, "cpus"))
 		info->pcpu = atoi(val);
 	
