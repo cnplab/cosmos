@@ -26,10 +26,29 @@ $(error "Define XEN_ROOT to build with DOMLIB=$(DOMLIB)")
 endif
 endif
 
-XEN_VERSION := $(shell xl info | grep -E "(xen_major|xen_minor|xen_extra)" | \
+XEN_HOST_VERSION := $(shell xl info | grep -E "(xen_major|xen_minor|xen_extra)" | \
 	cut -d: -f2 | tr -d ' ' | tr -d '.' | tr '\n' '.' | \
 	awk -F '.' '{ split($$3, a, "-"); printf "%01x%02x%02x", $$1, $$2, a[1]; }')
 
+XEN_ROOT_VERSION := $(shell cd $(XEN_ROOT); make --no-print-directory -C xen xenversion | \
+	awk -F '.' '{ split($$3, a, "-"); printf "%01x%02x%02x", $$1, $$2, a[1]; }')
+
+define XEN_VERSION_ERR
+
+Version mismatch between your host and the sources you are using:
+
+host-xenversion=$(XEN_HOST_VERSION)
+build-xenversion=$(XEN_ROOT_VERSION)
+
+endef
+
+ifneq (,$(filter $(DOMLIB),xcl xl))
+ifneq ($(XEN_HOST_VERSION), $(XEN_ROOT_VERSION))
+$(error $(XEN_VERSION_ERR))
+endif
+endif
+
+XEN_VERSION := $(XEN_HOST_VERSION)
 
 PYTHON_VERSION	?= 2.7
 
