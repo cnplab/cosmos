@@ -9,10 +9,23 @@ studied the boot process. The end result is this toolstack, focused on MiniOS-ba
 Building
 ========
 
-To build it just type ```make```. Eventually you will need to
-change ```XEN_ROOT```.
+You will need Xen sources only when building cosmos with domain libraries. Mostly the headers
+are needed which means you don't need to compile xen or its tools.
+Make sure the xen version installed in your host and sources you got match,
+otherwise you won't be able to build cosmos with domain libraries.
+
+    $ cd /path/to/xen-sources
+    $ ./configure
+    $ cd tools
+    $ make -C include
+
+You will need to export your Xen sources location into ```XEN_ROOT```.
 
     $ export XEN_ROOT=/path/to/xen-sources
+
+To build cosmos just type ```make```.
+
+    $ cd /path/to/cosmos
     $ make
 
 By default, it only builds a minimal core to start up middleboxes. If you
