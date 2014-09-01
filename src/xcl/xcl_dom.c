@@ -216,11 +216,17 @@ void xcl_dom_create(struct xcl_dominfo *info)
 	info->uuid_string = uuid_to_str(info->uuid);
 
 	if (info->pvh) {
+#if XEN_VERSION >= 40400
 		flags |= XEN_DOMCTL_CDF_pvh_guest;
 		flags |= XEN_DOMCTL_CDF_hap;
 		tsc_mode = TSC_MODE_NATIVE;
 		info->slack_memkb = 0;
+#else
+		LOG("PVH mode supported only for Xen >= %d", XEN_VERSION);
+		info->pvh = 0;
+#endif
 	}
+
 
 	ret = xc_domain_create(ctx->xch, 0, handle, flags, &domid);
 	info->domid = domid;
@@ -248,12 +254,14 @@ void xcl_dom_create(struct xcl_dominfo *info)
 	xc_dom_loginit(ctx->xch);
 
 	dom = (struct xc_dom_image*) xc_dom_allocate(ctx->xch, state->cmdline, info->features);
-	dom->pvh_enabled = info->pvh;
 	dom->flags = flags;
 	dom->console_evtchn = state->console_port;
 	dom->console_domid = state->console_domid;
 	dom->xenstore_evtchn = state->store_port;
 	dom->xenstore_domid = state->store_domid;
+#if XEN_VERSION >= 40400
+	dom->pvh_enabled = info->pvh;
+#endif
 
 	/* We can also map the image size - could be useful to
 	 * avoid always reading from a filei (e.g using xxd)
