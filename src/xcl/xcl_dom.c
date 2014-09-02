@@ -222,7 +222,7 @@ void xcl_dom_create(struct xcl_dominfo *info)
 		tsc_mode = TSC_MODE_NATIVE;
 		info->slack_memkb = 0;
 #else
-		LOG("PVH mode supported only for Xen >= %d", XEN_VERSION);
+		LOG("PVH mode supported only for Xen >= 4.4.0");
 		info->pvh = 0;
 #endif
 	}
