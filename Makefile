@@ -125,6 +125,9 @@ BUILD_DIRS		+= $(DIST_DIR)
 BUILD_DIRS		+= $(BIN_DIR)
 BUILD_DIRS		+= $(LIB_DIR)
 
+# Supported bindings
+BUILD_DIRS		+= $(LIB_DIR)/python
+BUILD_DIRS		+= $(LIB_DIR)/js
 
 ################################################################################
 # Configure building
@@ -154,6 +157,7 @@ endif
 ################################################################################
 LIBXCL_VERSION 			:= 0.1.0
 LIBXCL_VERSION_MAJOR	:= 0
+LIBXCL_LDFLAGS		:= -L$(LIB_DIR) -lxcl
 
 LIBXCL_BUILD_DIR		 = $(BUILD_DIR)/libxcl
 LIBXCL_SOURCE_DIR		 = $(SOURCE_DIR)/xcl
@@ -319,8 +323,18 @@ js-binding: BINDING_CFLAGS += $(V8_INCLUDE)
 # So that make doesn't delete intermediary files (in which the target is included)
 .SECONDARY:
 
-%-binding: LDFLAGS += -shared
+%-binding: LDFLAGS += -shared -L$(LIB_DIR) -lcosmos $(LIBCOSMOS_LDFLAGS-y)
+%-binding: BINDING=$*
 %-binding: $(LIB_DIR)/%-cosmos.so
+	$(call verbose_cmd,$(MV) $(LIB_DIR)/$(BINDING)-cosmos.so,'MV ',$(LIB_DIR)/$(BINDING)/_cosmos.so)
+	$(call verbose_cmd,$(CP) $(BUILD_DIR)/$(BINDING)/*,'CP ',$(LIB_DIR)/$(BINDING)/)
+ifneq (,$(filter $(BINDING),js))
+	$(call verbose_cmd,$(RM) ,'CLN ', $(LIB_DIR)/$(BINDING)/*.cxx)
+else
+	$(call verbose_cmd,$(RM) ,'CLN ', $(LIB_DIR)/$(BINDING)/*.c)
+endif
+	$(call verbose_cmd,$(RM) ,'CLN ', $(LIB_DIR)/$(BINDING)/*.i)
+	$(call verbose_cmd,$(RM) ,'CLN ', $(LIB_DIR)/$(BINDING)/*.o)
 	@#
 
 $(LIB_DIR)/%-cosmos.so: $(BUILD_DIR)/%/cosmos_wrap.o $(LIBCOSMOS_OBJS)
