@@ -208,39 +208,68 @@ static void parse_config_value(struct xcl_dominfo **dinfo, const char **click_fi
 }
 
 #define MAX_LINE_LEN	 256
-static void parse_config(const char *config, struct xcl_dominfo *info, 
+static char* config_gets(FILE* file, char **data, char **line, char **buf)
+{
+	char *err = NULL, *p;
+	unsigned int len;
+
+	if (file) {
+		err = fgets(*line, MAX_LINE_LEN, file);
+		goto gets_out;
+	}
+
+	p = strchr(*data, '\n');
+	if (!p)
+		return NULL;
+	len = p - *data;
+	memset(*line, 0, MAX_LINE_LEN);
+	memcpy(*line, *data, len);
+	*data = *data + len + 1;
+	err = p;
+
+gets_out:
+	*buf = lstrip(rstrip(*line));
+	return err;
+}
+
+static void parse_config(struct clickos_domain *dom, struct xcl_dominfo *info,
 		const char **click_file)
 {
-	FILE *file;
+	FILE *file = NULL;
 	char *line = (char*) malloc(MAX_LINE_LEN);
 	char *buf, *cont;
-	
-	file = fopen(config, "r");
-	if (!file) {
-		errno = ENOENT;
-		return;
+	char *config_data = dom->config_data;
+
+	if (!config_data) {
+		file = fopen(dom->config_file, "r");
+		if (!file) {
+			errno = ENOENT;
+			return;
+		}
 	}
-	
-	while (fgets(line, MAX_LINE_LEN, file) != NULL) {
-        	buf = lstrip(rstrip(line));
-        	if (*buf == '#') {
+
+	while (config_gets(file, &config_data, &line, &buf) != NULL) {
+	if (*buf == '#') {
 			continue;
 		}
-		
+
 		cont = find_attr(buf);
 		if (*cont == '=') {
 			char *name, *value;
 			*cont = '\0';
 			name = rstrip(buf);
-			value = lstrip(cont + 1);	
+			value = lstrip(cont + 1);
 			if (value[0] == '[')
 				parse_config_list(&info, name, value);
 			else
 				parse_config_value(&info, click_file, name, value);
 		}
-
 	}
-	fclose(file);
+
+	if (!config_data)
+		fclose(file);
+
+	free(line);
 }
 
 int domain_name_to_id(char *name)
@@ -268,15 +297,17 @@ int domain_create(struct clickos_domain *dom_info)
 	memset(&state, 0, sizeof(struct xcl_domstate));
 	
 	info.state = &state;
-	parse_config(dom_info->config_file, &info, &dom_info->click_file);
+	parse_config(dom_info, &info, &dom_info->click_file);
 
 	xcl_dom_create(&info);
 
 	if (dom_info->click_file) {
-		clickos_start(info.domid, dom_info->click_file, 
-			clickos_read_script(dom_info->click_file));
+		char *script = NULL;
+		script = clickos_read_script(dom_info->click_file);
+		clickos_start(info.domid, dom_info->click_file, script);
 	}
 
+	free((char*) dom_info->click_file);
 	return 0;
 }
 

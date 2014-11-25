@@ -62,7 +62,6 @@ struct clickos_domain {
 };
 
 int clickos_create2(struct clickos_domain *dom_info);
-int clickos_create3(const char *config_file, const char *args);
 #endif /* BINDING_SWIG */
 
 int  clickos_global_init(int verbose);
@@ -72,6 +71,7 @@ int   clickos_domid(char *domname);
 
 int clickos_create(const char *config_file);
 int clickos_create1(const char *name, const char* kernel_path);
+int clickos_create3(const char *config_file, const char *args);
 
 int clickos_destroy(int domid, int force);
 
