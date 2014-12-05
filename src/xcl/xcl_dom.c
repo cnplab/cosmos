@@ -49,7 +49,7 @@ xs_transaction_t t;
 
 static void __xcl_dom_pin(struct xcl_dominfo *info)
 {
-	int max_cpus, l;
+	int max_cpus, l, flags = 0;
 	xc_cpumap_t map;
 
 	max_cpus = xc_get_max_cpus(ctx->xch);
@@ -65,8 +65,11 @@ static void __xcl_dom_pin(struct xcl_dominfo *info)
 
 	map[info->pcpu / 8] |= 1 << (info->pcpu % 8);
 
+#if XEN_VERSION >= 40500
+	xc_vcpu_setaffinity(ctx->xch, info->domid, 0, map, map, flags);
+#else
 	xc_vcpu_setaffinity(ctx->xch, info->domid, 0, map);
-
+#endif
 	free(map);
 }
 
