@@ -168,6 +168,9 @@ BUILD_DIRS				+= $(LIBXCL_BUILD_DIR)
 $(LIBXCL_BUILD_DIR)/%.o: CINCLUDES += -I$(INCLUDE_DIR)/xcl
 $(LIBXCL_BUILD_DIR)/%.o: CINCLUDES += -I$(XEN_ROOT)/tools/libxl
 $(LIBXCL_BUILD_DIR)/%.o: CINCLUDES += -I$(XEN_ROOT)/tools/libxc
+ifeq ($(shell [ $(XEN_ROOT_VERSION) -ge 40500 ] && echo true),true)
+$(LIBXCL_BUILD_DIR)/%.o: CINCLUDES += -I$(XEN_ROOT)/tools/libxc/include
+endif
 $(LIBXCL_BUILD_DIR)/%.o: CINCLUDES += -I$(XEN_ROOT)/tools/include
 $(LIBXCL_BUILD_DIR)/%.o: $(LIBXCL_SOURCE_DIR)/%.c | bootstrap
 	$(call ccompile,-c $< -o $@,'CC ')
