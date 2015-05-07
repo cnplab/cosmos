@@ -75,10 +75,10 @@ TOUCH			 = touch
 ASCOMPILE		 = $(CC) $(ASDEFINES) $(CDEFINES) $(CINCLUDES) $(ASFLAGS)
 COMPILE			 = $(CC) $(CDEFINES)  $(CINCLUDES) $(CPPFLAGS) $(CFLAGS)
 CCLD			 = $(CC)
-CCLINK			 = $(CCLD) $(CFLAGS) $(LDFLAGS) -o $@
+CCLINK			 = $(CCLD) $(CFLAGS) $(1) $(LDFLAGS) -o $@
 CXXCOMPILE		 = $(CXX) $(CDEFINES) $(CINCLUDES) $(CPPFLAGS) $(CXXFLAGS)
 CXXLD			 = $(CXX)
-CXXLINK			 = $(CXXLD) $(CXXFLAGS) $(LDFLAGS) -o $@
+CXXLINK			 = $(CXXLD) $(CXXFLAGS) $(1) $(LDFLAGS) -o $@
 
 SWIG			 = swig
 SWIGCOMPILE		 = $(SWIG) $(SWIGFLAGS) $(SWIGINCLUDES)
@@ -87,9 +87,9 @@ XXD				?= xxd
 ifneq ($(verbose),y)
 ascompile		 = @/bin/echo ' ' $(2) $< && $(ASCOMPILE) $(1)
 ccompile		 = @/bin/echo ' ' $(2) $< && $(COMPILE) $(1)
-cclink			 = @/bin/echo ' ' $(2) $@ && $(CCLINK) $(1)
+cclink			 = @/bin/echo ' ' $(2) $@ && $(CCLINK)
 cxxcompile		 = @/bin/echo ' ' $(2) $< && $(CXXCOMPILE) $(1)
-cxxlink			 = @/bin/echo ' ' $(2) $< && $(CXXLINK) $(1)
+cxxlink			 = @/bin/echo ' ' $(2) $< && $(CXXLINK)
 swig			 = @/bin/echo ' ' $(2) $< && $(SWIGCOMPILE) $(1)
 archive			 = @/bin/echo ' ' $(2) $@ && $(AR) cr $(1)
 x_verbose_cmd	 = $(if $(2),/bin/echo ' ' $(2) $(3) &&,) $(1) $(3)
@@ -97,9 +97,9 @@ verbose_cmd		 = @$(x_verbose_cmd)
 else
 ascompile		 = $(ASCOMPILE) $(1)
 ccompile		 = $(COMPILE) $(1)
-cclink			 = $(CCLINK) $(1)
+cclink			 = $(CCLINK)
 cxxcompile		 = $(CXXCOMPILE) $(1)
-cxxlink			 = $(CXXLINK) $(1)
+cxxlink			 = $(CXXLINK)
 swig			 = $(SWIGCOMPILE) $(1)
 archive			 = $(AR) crv $(1)
 x_verbose_cmd	 = $(1) $(3)
