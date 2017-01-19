@@ -110,8 +110,8 @@ char* clickos_read_handler(int domid, char *elem, char *attr)
 		xenstore_init(domid);
 	}
 
-	asprintf(&ctrlpath, "/local/domain/%d/clickos/0/control", domid);
-	asprintf(&elempath, "/local/domain/%d/clickos/0/elements", domid);
+	asprintf(&ctrlpath, "/local/domain/%d/data/clickos/0/control", domid);
+	asprintf(&elempath, "/local/domain/%d/data/clickos/0/elements", domid);
 	asprintf(&wpath, "%s/read/%s/%s", ctrlpath, elem, attr);
 	asprintf(&rpath, "%s/%s/%s", elempath, elem, attr);
 
@@ -160,7 +160,7 @@ char* clickos_write_handler(int domid, char *elem, char *attr, char *value)
 		xenstore_init(domid);
 	}
 
-	asprintf(&elempath, "/local/domain/%d/clickos/0/elements", domid);
+	asprintf(&elempath, "/local/domain/%d/data/clickos/0/elements", domid);
 	asprintf(&wpath, "%s/%s/%s", elempath, elem, attr);
 
 	xenstore_write(wpath, value);
@@ -230,7 +230,7 @@ retry_clickos:
 	asprintf(&domain_root_path, "/local/domain/%d", domid);
 
 	do {
-		asprintf(&clickos_root_path, "%s/clickos/%d", domain_root_path, clickos_config_id);
+		asprintf(&clickos_root_path, "%s/data/clickos/%d", domain_root_path, clickos_config_id);
 		clickos_router_path = xenstore_read(clickos_root_path);
 		if (clickos_router_path)
 			clickos_config_id++;
@@ -297,7 +297,7 @@ int clickos_stop(int domid, int configid)
 		xenstore_init(domid);
 	}
 
-	asprintf(&statuspath, "/local/domain/%d/clickos/%d/status", domid, configid);
+	asprintf(&statuspath, "/local/domain/%d/data/clickos/%d/status", domid, configid);
 
 retry_stop:
 	th = xs_transaction_start(xs);

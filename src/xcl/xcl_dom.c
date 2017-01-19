@@ -130,7 +130,7 @@ retry_transaction:
 
 	{
 	char *control_path, *shutdown_path, *clickos_path, *clickos_shutdown_path;
-	asprintf(&clickos_path, "%s/clickos", dom_path);
+	asprintf(&clickos_path, "%s/data/clickos", dom_path);
 	asprintf(&control_path, "%s/control", dom_path);
 	asprintf(&shutdown_path, "%s/control/shutdown", dom_path);
 
@@ -138,7 +138,7 @@ retry_transaction:
 	xs_set_permissions(ctx->xsh, t,  shutdown_path, rwperm, 1);
 	xs_set_permissions(ctx->xsh, t, control_path, roperm, 2);
 
-	asprintf(&clickos_shutdown_path, "%s/clickos/shutdown", dom_path);
+	asprintf(&clickos_shutdown_path, "%s/data/clickos/shutdown", dom_path);
 	xs_mkdir(ctx->xsh, t, clickos_shutdown_path);
 	xs_set_permissions(ctx->xsh, t,  clickos_shutdown_path, rwperm, 1);
 	xs_set_permissions(ctx->xsh, t,  clickos_path, rwperm, 1);
